@@ -18,7 +18,7 @@ from htr_bench.inference import InferenceConfig, VLMTranscriber
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--iam-root", required=True, type=Path)
-    ap.add_argument("--split", default="test", choices=["train", "val", "test", "all"])
+    ap.add_argument("--split", default="all", choices=["train", "val", "test", "all"])
     ap.add_argument("--limit", type=int, default=None)
     ap.add_argument("--endpoint", default="http://localhost:8000/v1")
     ap.add_argument("--model", default="Qwen/Qwen2.5-VL-7B-Instruct")

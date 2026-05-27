@@ -29,10 +29,11 @@ pick a model size and prompt strategy before committing to a production run.
 # Install
 pip install -e .
 
-# 1. Point at an IAM dataset root (containing forms/ and ascii/ or xml/)
-export IAM_ROOT=/path/to/iam
+# 1. Assemble IAM locally from Kaggle (needs ~/.kaggle/kaggle.json).
+#    Drop --forms-only-sample for the full ~4.6 GB page set.
+python scripts/download_iam.py --out data/iam --forms-only-sample
 
-# 2. Serve the model with vLLM in another shell
+# 2. Serve the model with vLLM on a GPU box, in another shell
 vllm serve Qwen/Qwen2.5-VL-7B-Instruct \
   --port 8000 \
   --max-model-len 8192 \
@@ -40,12 +41,28 @@ vllm serve Qwen/Qwen2.5-VL-7B-Instruct \
 
 # 3. Run the benchmark
 python -m scripts.evaluate \
-  --iam-root "$IAM_ROOT" \
+  --iam-root data/iam \
   --endpoint http://localhost:8000/v1 \
   --model Qwen/Qwen2.5-VL-7B-Instruct \
   --limit 50 \
   --out results/qwen2.5-vl-7b.json
 ```
+
+### Dataset layout
+
+`download_iam.py` assembles the canonical IAM layout the loader expects:
+
+```
+data/iam/
+  lines.txt           # transcripts, '|'-separated word tokens, per text line
+  forms/<form_id>.png # full-page scans
+```
+
+The loader (`htr_bench.dataset.load_iam`) finds `lines.txt` and the page PNGs by
+search, so nested Kaggle mirror layouts also work without reshuffling. The
+`train`/`val`/`test` splits need the separate IAM task split files
+(`largeWriterIndependentTextLineRecognitionTask`); without them, use
+`--split all` (the default).
 
 ## Models
 
@@ -63,8 +80,9 @@ src/htr_bench/
   eval.py        # CER/WER, latency, pages/s
   prompts.py     # transcription prompt(s)
 scripts/
-  transcribe.py  # transcribe a folder of images
-  evaluate.py    # end-to-end eval against IAM
+  download_iam.py # assemble IAM from Kaggle mirrors
+  transcribe.py   # transcribe a folder of images
+  evaluate.py     # end-to-end eval against IAM
 configs/
   default.yaml   # default run config
 ```
